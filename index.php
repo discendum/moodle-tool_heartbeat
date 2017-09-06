@@ -27,6 +27,8 @@ header('Pragma: no-cache');
 header('Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate, proxy-revalidate');
 header('Expires: Tue, 04 Sep 2012 05:32:29 GMT');
 
+require_once(__DIR__ . '/locallib.php');
+
 // Set this manually to true as needed.
 if (false) {
     print "Server is in MAINTENANCE";
@@ -43,6 +45,7 @@ if (isset($argv) && $argv[0]) {
     define('NO_MOODLE_COOKIES', true);
     $fullcheck = isset($_GET['fullcheck']);
 }
+
 define('NO_UPGRADE_CHECK', true);
 define('ABORT_AFTER_CONFIG', true);
 
@@ -78,6 +81,7 @@ if (check_climaintenance(__DIR__ . '/../../../config.php') === true) {
 
 require_once(__DIR__ . '/../../../config.php');
 global $CFG;
+$istotara = file_exists($CFG->dirroot . '/totara');
 
 $status = "";
 
@@ -93,6 +97,10 @@ function failed($reason) {
     print "Server is DOWN<br>\n";
     echo "Failed: $reason";
     exit;
+}
+
+if ((!defined('CLI_SCRIPT') || !CLI_SCRIPT) && !admin_tool_heartbeat_in_allowed_ip_ranges($_SERVER['REMOTE_ADDR'])) {
+  failed('Remote address '.$_SERVER['REMOTE_ADDR'].' not authorized!');
 }
 
 $testfile = $CFG->dataroot . "/tool_heartbeat.test";
@@ -139,9 +147,11 @@ if ($sessionhandler && $savepath) {
 // Optionally check database configuration and access (slower).
 if ($fullcheck) {
     try {
-        define('ABORT_AFTER_CONFIG_CANCEL', true);
-        require($CFG->dirroot . '/lib/setup.php');
-        global $DB;
+        if (!defined('ABORT_AFTER_CONFIG_CANCEL')) {
+          define('ABORT_AFTER_CONFIG_CANCEL', true);
+          require($CFG->dirroot . '/lib/setup.php');
+        }
+        global $DB, $TOTARA;
 
         // Try to get the first record from the user table.
         $user = $DB->get_record_sql('SELECT id FROM {user} WHERE 0 < id ', null, IGNORE_MULTIPLE);
@@ -150,13 +160,31 @@ if ($fullcheck) {
         } else {
             failed('no users in database');
         }
+
+
+        if ($istotara) {
+          $timeoffset = 86400;
+          $syncerrors = $DB->get_field_sql("SELECT COUNT(id) AS error_count FROM totara_sync_log WHERE logtype = 'error' AND time > ?", array(time()-$timeoffset) ); // Totara sync errors in the last hour
+          if ($syncerrors != 0) {
+            $status .= "HR sync errors detected<br>\n";
+          } else {
+            $status .= "HR sync OK<br>\n";
+          }
+        }
+
     } catch (Exception $e) {
         failed('database error');
     } catch (Throwable $e) {
         failed('database error');
     }
 }
+if ($fullcheck) {
+  require_once($CFG->libdir . '/moodlelib.php');
+  $testing = get_config('tool_heartbeat', 'testing');
+  if ($testing == 'error') {
+    failed("Moodle this is a test $CFG->wwwroot/admin/settings.php?section=tool_heartbeat\n");
+  }
+}
 
 print "Server is ALIVE<br>\n";
 print $status;
-

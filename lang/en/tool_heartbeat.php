@@ -31,3 +31,5 @@ $string['progresshelp'] = 'This tests that all the various output buffers in the
 $string['testwarning'] = 'Fake a warning';
 $string['testerror'] = 'Fake a critical';
 
+$string['allowedipranges'] = 'Allowed ip ranges';
+$string['allowediprangesdesc'] = 'Newline separated list of CIDR ip-ranges';

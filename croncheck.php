@@ -32,12 +32,15 @@
 
 define('NO_UPGRADE_CHECK', true);
 
+require_once(__DIR__ . '/locallib.php');
+
 $cronthreshold  = 6;   // Hours.
 $cronwarn       = 2;   // Hours.
 $delaythreshold = 600; // Minutes.
 $delaywarn      = 60;  // Minutes.
 
 $dirroot = '../../../';
+
 
 if (isset($argv)) {
     // If run from the CLI.
@@ -135,6 +138,10 @@ if (moodle_needs_upgrading()) {
     send_critical("Moodle upgrade pending, cron execution suspended");
 }
 
+if ((!defined('CLI_SCRIPT') || !CLI_SCRIPT) && !admin_tool_heartbeat_in_allowed_ip_ranges($_SERVER['REMOTE_ADDR'])) {
+  send_warning('Remote address not authorized!');
+}
+
 if ($CFG->branch < 27) {
 
     $lastcron = $DB->get_field_sql('SELECT MAX(lastcron) FROM {modules}');
@@ -216,4 +223,3 @@ if ( $maxminsdelay > $options['delayerror'] ) {
 }
 
 send_good("MOODLE CRON RUNNING\n");
-

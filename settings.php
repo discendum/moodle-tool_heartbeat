@@ -26,6 +26,7 @@ defined('MOODLE_INTERNAL') || die;
 
 if ($hassiteconfig) {
 
+    $component = 'tool_heartbeat';
     $settings = new admin_settingpage('tool_heartbeat', get_string('pluginname', 'tool_heartbeat'));
 
     $ADMIN->add('tools', $settings);
@@ -42,6 +43,11 @@ if ($hassiteconfig) {
                         'error',
                         $options));
     }
+    // SSO No automatic redirects
+    $name = "{$component}/allowedipranges";
+    $title = new lang_string('allowedipranges', $component);
+    $description = new lang_string('allowediprangesdesc', $component);
+    $setting = new admin_setting_configtextarea($name, $title, $description,
+            "127.0.0.0/24\n192.168.0.0/24");
+    $settings->add($setting);
 }
-
-
