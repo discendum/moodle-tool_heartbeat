@@ -164,7 +164,7 @@ if ($fullcheck) {
 
         if ($istotara) {
           $timeoffset = 86400;
-          $syncerrors = $DB->get_field_sql("SELECT COUNT(id) AS error_count FROM totara_sync_log WHERE logtype = 'error' AND time > ?", array(time()-$timeoffset) ); // Totara sync errors in the last hour
+          $syncerrors = $DB->get_field_sql("SELECT COUNT(id) AS error_count FROM {totara_sync_log} WHERE logtype = 'error' AND time > ?", array(time()-$timeoffset) ); // Totara sync errors in the last hour
           if ($syncerrors != 0) {
             $status .= "HR sync errors detected<br>\n";
           } else {
